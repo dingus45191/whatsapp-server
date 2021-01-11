@@ -2,8 +2,7 @@
 
 import express from 'express'
 import mongoose from 'mongoose'
-import Messages from './MessagesDB'
-import * as Process from "process";
+import Messages from './MessagesDB.js'
 
 //app config
 
@@ -12,23 +11,37 @@ const port= process.env.PORT || 5000
 
 //middlewares
 
+app.use(express.json())
+
 //DB config
 
-mongoose.connect('mongodb+srv://mubashir:Smartguy1@cluster0.hzaow.mongodb.net/my-whatsapp-?retryWrites=true&w=majority',{
+let connectionUri;
+connectionUri= 'mongodb+srv://mubashir:YjqtbobK0i3294LP@cluster0.hzaow.mongodb.net/my-whatsapp-?retryWrites=true&w=majority'
+mongoose.connect(connectionUri,{
     useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
 
 // ????
-
 //api routes
 
 app.get('/',(req, res) =>{
 res.status(200).send('hello')
 } )
 
-app.post('/api/v1/messages/new',((req, res) => {
+app.get('/messages/sync',((req, res) => {
+    Messages.find((err,data)=>{
+        if (err){
+            res.status(500).send(err)
+        }
+        else{
+            res.status(200).send(data)
+        }
+    })
+}))
+
+app.post('/messages/new',((req, res) => {
     const dbMessage= req.body
     Messages.create(dbMessage,(err, data) =>{
       if(err){
