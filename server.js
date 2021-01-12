@@ -2,9 +2,22 @@
 
 import express from 'express'
 import mongoose from 'mongoose'
-import Messages from './MessagesDB.js'
+import messages from './MessagesDB.js'
+import Pusher from 'pusher'
 
 //app config
+
+const pusher = new Pusher({
+    appId: "1136847",
+    key: "a1594a87ba3826b5f6e3",
+    secret: "e1a9be6cabfd312885b8",
+    cluster: "mt1",
+    useTLS: true
+});
+
+pusher.trigger("my-channel", "my-event", {
+    message: "hello world"
+});
 
 const app = express()
 const port= process.env.PORT || 5000
@@ -22,6 +35,28 @@ mongoose.connect(connectionUri,{
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
+const db= mongoose.connection;
+db.once('open',()=>{
+    console.log('DB is connected')
+    const msgCollection= db.collection('messages')
+    const changeStream = msgCollection.watch()
+    changeStream.on('change',(change)=>{
+        console.log(change)
+        if(change.operationType==='insert'){
+            const messageDetails = change.fullDocument;
+            pusher.trigger('messages','inserted',{
+                name: messageDetails.name,
+                message: messageDetails.message
+            })
+        }
+        else {
+            console.log('Error triggering Pusher')
+        }
+    })
+
+
+})
+
 
 // ????
 //api routes
@@ -31,7 +66,7 @@ res.status(200).send('hello')
 } )
 
 app.get('/messages/sync',((req, res) => {
-    Messages.find((err,data)=>{
+    messages.find((err,data)=>{
         if (err){
             res.status(500).send(err)
         }
@@ -43,7 +78,7 @@ app.get('/messages/sync',((req, res) => {
 
 app.post('/messages/new',((req, res) => {
     const dbMessage= req.body
-    Messages.create(dbMessage,(err, data) =>{
+    messages.create(dbMessage,(err, data) =>{
       if(err){
           res.status(500).send(err)
       }
