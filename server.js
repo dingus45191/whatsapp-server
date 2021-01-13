@@ -4,6 +4,7 @@ import express from 'express'
 import mongoose from 'mongoose'
 import messages from './MessagesDB.js'
 import Pusher from 'pusher'
+import cors from 'cors'
 
 //app config
 
@@ -25,6 +26,8 @@ const port= process.env.PORT || 5000
 //middlewares
 
 app.use(express.json())
+app.use(cors())
+
 
 //DB config
 
